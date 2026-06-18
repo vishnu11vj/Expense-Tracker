@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{min-height:100vh;background:#f7f7f5;font-family:'DM Sans',sans-serif;padding:24px;}
+  .container{max-width:900px;margin:0 auto;}
+  h1{font-family:'DM Serif Display';font-size:36px;color:#1a1a1a;margin-bottom:4px;}
+  .month{color:#aaa;font-size:14px;margin-bottom:28px;}
+  .top{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+  .stat-card{background:#fff;border-radius:18px;padding:22px;border:1px solid #efefef;}
+  .stat-card.income .val{color:#22c55e;}
+  .stat-card.expense .val{color:#ef4444;}
+  .stat-label{font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .val{font-size:28px;font-weight:600;color:#1a1a1a;}
+  .main{display:grid;grid-template-columns:1fr 340px;gap:20px;}
+  .transactions{background:#fff;border-radius:18px;padding:24px;border:1px solid #efefef;}
+  .transactions h2{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:18px;}
+  .tx-list{display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;}
+  .tx{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:#fafafa;transition:background 0.2s;}
+  .tx:hover{background:#f5f5f5;}
+  .tx-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .tx-info{flex:1;}
+  .tx-name{font-size:14px;font-weight:500;color:#1a1a1a;}
+  .tx-cat{font-size:12px;color:#aaa;margin-top:1px;}
+  .tx-amt{font-size:15px;font-weight:600;}
+  .tx-amt.inc{color:#22c55e;}
+  .tx-amt.exp{color:#ef4444;}
+  .tx-del{background:none;border:none;color:#ddd;cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:all 0.2s;}
+  .tx-del:hover{color:#ef4444;background:#fff0f0;}
+  .add-panel{background:#fff;border-radius:18px;padding:24px;border:1px solid #efefef;height:fit-content;}
+  .add-panel h2{font-size:16px;font-weight:600;margin-bottom:18px;}
+  .type-toggle{display:flex;background:#f5f5f5;border-radius:10px;padding:4px;margin-bottom:18px;}
+  .type-btn{flex:1;padding:8px;border:none;border-radius:7px;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:500;color:#888;cursor:pointer;transition:all 0.2s;}
+  .type-btn.active{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+  .type-btn.active.inc{color:#22c55e;}
+  .type-btn.active.exp{color:#ef4444;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+  .field input,.field select{width:100%;padding:11px 14px;border:1.5px solid #eee;border-radius:10px;font-family:'DM Sans';font-size:14px;outline:none;color:#1a1a1a;transition:border 0.2s;background:#fff;}
+  .field input:focus,.field select:focus{border-color:#1a1a1a;}
+  .add-btn{width:100%;padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:11px;font-family:'DM Sans';font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;}
+  .add-btn:hover{background:#333;}
+  .bar-wrap{margin-top:16px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:12px;color:#aaa;margin-bottom:6px;}
+  .bar-track{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#ef4444,#ff6b6b);transition:width 0.5s ease;}
+  .empty{text-align:center;color:#ccc;padding:40px;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Expense Tracker</h1>
+  <div class="month" id="monthLabel"></div>
+  <div class="top">
+    <div class="stat-card"><div class="stat-label">Balance</div><div class="val" id="balance">₹0</div></div>
+    <div class="stat-card income"><div class="stat-label">Income</div><div class="val income" id="totalInc">₹0</div></div>
+    <div class="stat-card expense"><div class="stat-label">Expenses</div><div class="val" id="totalExp">₹0</div></div>
+  </div>
+  <div class="main">
+    <div class="transactions">
+      <h2>Transactions</h2>
+      <div class="tx-list" id="txList"></div>
+    </div>
+    <div class="add-panel">
+      <h2>Add Transaction</h2>
+      <div class="type-toggle">
+        <button class="type-btn active inc" id="incBtn" onclick="setType('income')">+ Income</button>
+        <button class="type-btn exp" id="expBtn" onclick="setType('expense')">− Expense</button>
+      </div>
+      <div class="field"><label>Description</label><input id="desc" placeholder="e.g. Salary, Groceries"></div>
+      <div class="field"><label>Amount (₹)</label><input id="amt" type="number" placeholder="0.00" min="0"></div>
+      <div class="field"><label>Category</label>
+        <select id="cat">
+          <option>💼 Salary</option><option>🍔 Food</option><option>🚗 Transport</option>
+          <option>🛒 Shopping</option><option>💡 Utilities</option><option>🎮 Entertainment</option>
+          <option>🏥 Health</option><option>📚 Education</option><option>💰 Other</option>
+        </select>
+      </div>
+      <button class="add-btn" onclick="addTx()">Add Transaction</button>
+      <div class="bar-wrap" id="barWrap" style="display:none">
+        <div class="bar-label"><span>Spent vs Earned</span><span id="barPct">0%</span></div>
+        <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  let txs=JSON.parse(localStorage.getItem('expenses')||'[]');
+  let type='income';
+  document.getElementById('monthLabel').textContent=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  function setType(t){
+    type=t;
+    document.getElementById('incBtn').classList.toggle('active',t==='income');
+    document.getElementById('expBtn').classList.toggle('active',t==='expense');
+  }
+  function addTx(){
+    const desc=document.getElementById('desc').value.trim();
+    const amt=parseFloat(document.getElementById('amt').value);
+    const cat=document.getElementById('cat').value;
+    if(!desc||!amt||amt<=0)return alert('Please fill all fields.');
+    txs.unshift({id:Date.now(),desc,amt,cat,type});
+    localStorage.setItem('expenses',JSON.stringify(txs));
+    document.getElementById('desc').value='';document.getElementById('amt').value='';
+    render();
+  }
+  function del(id){txs=txs.filter(t=>t.id!==id);localStorage.setItem('expenses',JSON.stringify(txs));render();}
+  function fmt(n){return '₹'+n.toLocaleString('en-IN',{maximumFractionDigits:0});}
+  function render(){
+    const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amt,0);
+    const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amt,0);
+    const bal=inc-exp;
+    document.getElementById('balance').textContent=fmt(bal);
+    document.getElementById('balance').style.color=bal>=0?'#22c55e':'#ef4444';
+    document.getElementById('totalInc').textContent=fmt(inc);
+    document.getElementById('totalExp').textContent=fmt(exp);
+    const list=document.getElementById('txList');
+    if(!txs.length){list.innerHTML='<div class="empty">No transactions yet</div>';return;}
+    list.innerHTML=txs.map(t=>`
+      <div class="tx">
+        <div class="tx-icon" style="background:${t.type==='income'?'#f0fdf4':'#fef2f2'}">${t.cat.split(' ')[0]}</div>
+        <div class="tx-info"><div class="tx-name">${t.desc}</div><div class="tx-cat">${t.cat.split(' ').slice(1).join(' ')}</div></div>
+        <span class="tx-amt ${t.type==='income'?'inc':'exp'}">${t.type==='income'?'+':'-'}${fmt(t.amt)}</span>
+        <button class="tx-del" onclick="del(${t.id})">×</button>
+      </div>`).join('');
+    if(inc>0){const pct=Math.min(100,Math.round(exp/inc*100));document.getElementById('barWrap').style.display='block';document.getElementById('barFill').style.width=pct+'%';document.getElementById('barPct').textContent=pct+'%';}
+  }
+  render();
+</script>
+</body>
+</html>
